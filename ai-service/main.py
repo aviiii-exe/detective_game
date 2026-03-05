@@ -1,10 +1,20 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware # 1. Add this import!
 from pydantic import BaseModel
 import os
+import json
 from dotenv import load_dotenv
 from google import genai
 
 load_dotenv()
+
+app.add_middleware(  # type: ignore
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
