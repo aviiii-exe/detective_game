@@ -1,15 +1,17 @@
-function generateMystery() {
-  return {
-    story: "A programmer disappeared after pushing a commit at 3:47 AM.",
-        suspects: ["Alex", "Sam", "Riley"],
-        clues: [
-            "Coffee receipt at 2:55 AM",
-            "Laptop login at 3:42 AM",
-            "Commit pushed at 3:47 AM"
-        ],
-        culprit: "Sam",
-        explanation: "Sam lied about leaving early."
+const axios = require('axios');
+
+async function generateMystery(difficulty, theme = "Cyberpunk") {
+  try {
+    // This MUST match the Python server in main.py
+    const response = await axios.post('http://127.0.0.1:8000/api/start-case', {
+      case_theme: theme,
+      difficulty: difficulty
+    });
+    return response.data;
+  } catch (error) {
+    console.error("AI Service Error:", error.message);
+    throw error;
   }
 }
 
-module.exports = {generateMystery}
+module.exports = { generateMystery };
