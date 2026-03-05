@@ -8,6 +8,8 @@ from google import genai
 
 load_dotenv()
 
+app = FastAPI()
+
 app.add_middleware(  # type: ignore
     CORSMiddleware,
     allow_origins=["*"], 
@@ -22,7 +24,7 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
-app = FastAPI()
+
 
 class GameSetupRequest(BaseModel):
     case_theme: str      # e.g., "The Poisoned Professor"

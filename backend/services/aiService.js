@@ -1,15 +1,20 @@
-function generateMystery() {
-  return {
-    story: "A programmer disappeared after pushing a commit at 3:47 AM.",
-        suspects: ["Alex", "Sam", "Riley"],
-        clues: [
-            "Coffee receipt at 2:55 AM",
-            "Laptop login at 3:42 AM",
-            "Commit pushed at 3:47 AM"
-        ],
-        culprit: "Sam",
-        explanation: "Sam lied about leaving early."
-  }
+const axios = require("axios");
+
+const AI_SERVICE_URL = "http://localhost:8000";
+
+async function startCase(data){
+  const response = await axios.post(`${AI_SERVICE_URL}/api/start-case`, data);
+  return response.data;
 }
 
-module.exports = {generateMystery}
+async function chatWithSuspect(data){
+  const response = await axios.post(`${AI_SERVICE_URL}/api/chat`, data);
+  return response.data;
+}
+
+async function accuse(data){
+  const reponse = await axios.post(`${AI_SERVICE_URL}/api/accuse`, data);
+  return response.data;
+}
+
+module.exports = {startCase, chatWithSuspect, accuse};

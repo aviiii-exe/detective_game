@@ -1,5 +1,10 @@
 node_modules/
-.DS_Store
 .env
+
+.DS_Store
+
 dist
 build
+
+__pycache__/
+*.pyc
