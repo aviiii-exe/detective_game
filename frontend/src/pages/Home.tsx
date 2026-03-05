@@ -1,34 +1,75 @@
+import { Typewriter } from '../components/Typewriter';
+
 export default function Home() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full h-full p-10 animate-out fade-out duration-[4000ms]">
-      <div className="flex flex-col items-center space-y-16">
+    <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full h-full p-10 animate-out fade-out duration-[4000ms] bg-[#05070a]">
+      
+      {/* 1. Grit Overlays for Atmosphere */}
+      <div className="absolute inset-0 vignette-overlay pointer-events-none" />
+      <div className="absolute inset-0 scanline-effect pointer-events-none opacity-40" />
+
+      <div className="flex flex-col items-center space-y-12 relative z-20">
         
-        {/* THE NEURAL EYE */}
-        <div className="relative w-64 h-64 flex items-center justify-center">
-          <div className="absolute inset-0 border border-cyan-500/20 rounded-full animate-pulse-ring" />
-          <div className="absolute inset-4 border border-cyan-400/10 rounded-full animate-[pulse-ring_5s_ease-in-out_infinite]" />
-          <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center backdrop-blur-md border border-cyan-400/40 shadow-[0_0_30px_rgba(6,182,212,0.3)] animate-float">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#22d3ee]" />
+        {/* TOP CLASSIFIED HEADER */}
+        <div className="absolute top-[-100px] flex flex-col items-center space-y-2 opacity-30">
+          <span className="text-[8px] tracking-[1em] text-cyan-500 font-bold uppercase">
+            Federal_Bureau_of_Neural_Intelligence
+          </span>
+          <div className="h-px w-64 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
+        </div>
+
+        {/* 2. THE BIOMETRIC SCANNER (The "Soul" Centerpiece) */}
+        <div className="relative w-48 h-64 border border-cyan-500/20 bg-cyan-500/5 p-4 flex flex-col items-center justify-center">
+          {/* Fingerprint / Scanner Icon Area */}
+          <div className="relative w-full h-full border border-cyan-500/10 flex items-center justify-center overflow-hidden">
+            {/* The Scanning Beam */}
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-cyan-400 shadow-[0_0_15px_#22d3ee] animate-[scan-beam_2s_ease-in-out_infinite] z-30" />
+            
+            {/* Silhouette / Grid Placeholder */}
+            <div className="opacity-20 flex flex-col items-center space-y-1">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex space-x-1">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="w-4 h-4 border border-cyan-500/20" />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center">
+               <span className="text-[10px] text-cyan-500/40 font-bold animate-pulse uppercase tracking-widest">
+                 Analyzing...
+               </span>
+            </div>
+          </div>
+          
+          {/* Status Label */}
+          <div className="mt-4 w-full flex justify-between items-center text-[8px] text-cyan-500/60 font-mono tracking-tighter uppercase">
+            <span>ID: UNKNOWN</span>
+            <span className="animate-pulse">TRACE_ACTIVE</span>
           </div>
         </div>
 
-        {/* UPDATED NAME */}
-        <div className="text-center space-y-6">
-          <h1 className="text-5xl md:text-6xl font-light tracking-[0.2em] text-white opacity-90 drop-shadow-[0_0_20px_rgba(6,182,212,0.5)] uppercase italic">
-            AI case detective game
+        {/* 3. THE NOIR TITLE */}
+        <div className="text-center space-y-4">
+          <h1 className="text-6xl font-black italic tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            AI CASE <span className="text-cyan-500">DETECTIVE</span>
           </h1>
-          <div className="flex items-center justify-center space-x-4">
-             <div className="h-px w-12 bg-cyan-900/50" />
-             <p className="text-[10px] tracking-[0.8em] text-cyan-500 uppercase font-medium">
-               Initializing_Sequence
-             </p>
-             <div className="h-px w-12 bg-cyan-900/50" />
+          
+          <div className="font-typewriter text-cyan-500/80 text-sm italic tracking-widest">
+            <Typewriter text="Establishing secure uplink to Case File: #GHOST-92..." delay={40} />
           </div>
         </div>
 
-        {/* VISUAL LOADING BAR (Replaces Button) */}
-        <div className="w-48 h-[1px] bg-cyan-900/30 relative overflow-hidden">
-          <div className="absolute inset-0 bg-cyan-500 animate-[loading-bar_4s_linear_infinite]" />
+        {/* BOTTOM LOADING BAR */}
+        <div className="w-64 space-y-2">
+          <div className="flex justify-between text-[7px] text-cyan-500/40 tracking-widest uppercase">
+            <span>Decrypting_Data</span>
+            <span>74%</span>
+          </div>
+          <div className="w-full h-[2px] bg-cyan-900/30 relative overflow-hidden">
+            <div className="absolute inset-0 bg-cyan-500 animate-[loading-bar_4s_linear_infinite]" />
+          </div>
         </div>
       </div>
     </div>

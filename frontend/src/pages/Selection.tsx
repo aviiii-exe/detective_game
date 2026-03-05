@@ -1,62 +1,67 @@
-import { Typewriter } from '../components/Typewriter';
 import DotGrid from '../components/DotGrid';
 
 export default function Selection({ onGenerate }: { onGenerate: (m: string) => void }) {
   const modes = [
-    { id: 'NOVICE', color: '#22d3ee', desc: 'Standard AI generation. Easy difficulty.' },
-    { id: 'INTERMEDIATE', color: '#fbbf24', desc: 'Complex contradictions. Medium difficulty.' },
-    { id: 'EXPERT', color: '#ef4444', desc: 'Highly encrypted logic. Hard difficulty.' }
+    { id: 'NOVICE', code: 'CASE_01', color: '#22d3ee', difficulty: 'LOW_RISK' },
+    { id: 'INTERMEDIATE', code: 'CASE_04', color: '#fbbf24', difficulty: 'MODERATE' },
+    { id: 'EXPERT', code: 'CASE_09', color: '#ef4444', difficulty: 'CRITICAL' }
   ];
 
   return (
-    // The parent must be relative so the absolute DotGrid stays inside it
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#05070a]">
+      <DotGrid proximity={120} baseColor="rgba(255, 255, 255, 0.03)" />
       
-      {/* THE GRID (Layer 0) */}
-      <DotGrid />
+      {/* Visual Grit Overlays */}
+      <div className="absolute inset-0 vignette-overlay z-10" />
+      <div className="absolute inset-0 scanline-effect z-10" />
 
-      {/* THE CONTENT (Layer 10) */}
-      <div className="relative z-10 flex flex-col items-center justify-center p-10 space-y-12 max-w-5xl w-full mx-auto animate-in fade-in duration-1000">
-        
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-light tracking-[0.4em] text-white/90 uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-            Select_Operation_Mode
+      <div className="relative z-20 w-full max-w-6xl p-10 space-y-16">
+        <div className="space-y-2 border-l-4 border-cyan-500 pl-6">
+          <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase">
+            Select Investigation
           </h2>
-          <div className="w-24 h-px bg-white/10 mx-auto" />
+          <p className="text-xs tracking-[0.5em] text-cyan-500/50 font-bold uppercase">
+            Forensic_Database_v4.02 // Awaiting_Selection
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-8 w-full">
+        <div className="grid grid-cols-3 gap-10">
           {modes.map((mode) => (
             <button
               key={mode.id}
               onClick={() => onGenerate(mode.id)}
-              style={{ '--mode-glow': mode.color } as React.CSSProperties}
-              className="h-64 border border-white/5 bg-black/60 backdrop-blur-md transition-all duration-500 flex flex-col items-center justify-center group p-8 text-center relative overflow-hidden hover:border-[var(--mode-glow)] hover:shadow-[0_0_30px_rgba(0,0,0,0.5),0_0_20px_var(--mode-glow)]"
+              style={{ '--case-color': mode.color } as React.CSSProperties}
+              className="group relative flex flex-col text-left transition-all duration-500 hover:-translate-y-2"
             >
-              <div 
-                className="absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out opacity-10" 
-                style={{ backgroundColor: mode.color }}
-              />
+              {/* Folder Tab Effect */}
+              <div className="w-24 h-6 bg-white/5 border-t border-x border-white/10 rounded-t-lg ml-2 transition-colors group-hover:bg-[var(--case-color)] group-hover:text-black flex items-center justify-center">
+                <span className="text-[8px] font-bold tracking-widest">{mode.code}</span>
+              </div>
+              
+              <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-8 shadow-2xl relative overflow-hidden group-hover:border-[var(--case-color)]/50">
+                {/* ID Tag */}
+                <span className="absolute top-4 right-4 text-[8px] font-bold text-white/20 tracking-tighter uppercase">
+                  Ref: {mode.difficulty}
+                </span>
 
-              <div className="w-12 h-12 border border-white/10 mb-6 group-hover:rotate-45 transition-all duration-500 flex items-center justify-center relative z-20 group-hover:border-[var(--mode-glow)]">
-                <div className="w-2 h-2" style={{ backgroundColor: mode.color }} />
+                <h3 className="text-3xl font-black italic text-white/40 group-hover:text-white transition-colors mb-4">
+                  {mode.id}
+                </h3>
+                
+                <div className="h-px w-full bg-white/5 mb-4 group-hover:bg-[var(--case-color)]/20" />
+                
+                <p className="text-[10px] text-white/30 uppercase tracking-widest leading-relaxed">
+                  Initializing forensic link for difficulty level: {mode.id}. Trace probability: 84%.
+                </p>
+
+                {/* Corner Accent */}
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/5 group-hover:border-[var(--case-color)] transition-colors" />
               </div>
 
-              <span className="text-[12px] tracking-[0.4em] font-bold text-white/40 group-hover:text-white relative z-20 mb-3 transition-colors uppercase">
-                {mode.id}
-              </span>
-              <p className="text-[9px] text-white/20 uppercase tracking-widest relative z-20 group-hover:text-white/60">
-                {mode.desc}
-              </p>
+              {/* Hover Glow */}
+              <div className="absolute inset-0 -z-10 bg-[var(--case-color)]/0 blur-3xl transition-all duration-500 group-hover:bg-[var(--case-color)]/10" />
             </button>
           ))}
-        </div>
-
-        <div className="w-full p-8 bg-black/60 border-l border-white/10 backdrop-blur-md relative z-10">
-          <p className="text-[10px] text-white/20 mb-4 font-bold tracking-[0.4em] uppercase">System_Prompt:</p>
-          <div className="text-lg italic text-slate-400">
-            <Typewriter text="Awaiting mode selection... The AI Content Engine is ready for uplink." />
-          </div>
         </div>
       </div>
     </div>
