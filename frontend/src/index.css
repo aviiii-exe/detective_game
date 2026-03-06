@@ -1,5 +1,6 @@
 @import "tailwindcss";
-/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
 @keyframes loading-bar {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -47,8 +48,6 @@ body {
   background-size: 40px 40px;
   animation: drift 60s linear infinite;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
 
 .font-typewriter {
   font-family: 'Special Elite', typewriter, serif;
