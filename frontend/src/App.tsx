@@ -11,6 +11,8 @@ interface Suspect {
 }
 
 interface CaseData {
+  theme_name: string;      // ADDED: For dynamic backgrounds & titles
+  image_keyword: string;   // ADDED: For dynamic backgrounds & titles
   narration: string;       // Replaced 'story'
   suspects: Suspect[];     // Array of objects instead of strings
   actual_murderer: string; // Replaced 'culprit'
@@ -37,15 +39,16 @@ export default function App() {
   }, [currentPage]);
 
   // Fetching the case through the Node bridge (Port 5000)
-  const handleGenerateCase = async (mode: string) => {
+  // UPDATED: Now takes both theme and difficulty from the Selection screen
+  const handleGenerateCase = async (theme: string, difficulty: string) => {
     setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/generate-case', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          difficulty: mode, 
-          case_theme: "Cyberpunk" // Sending theme as requested by AI teammate
+          difficulty: difficulty, 
+          case_theme: theme 
         }),
       });
 
