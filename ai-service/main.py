@@ -11,6 +11,8 @@ load_dotenv()
 
 app = FastAPI()
 
+app = FastAPI()
+
 app.add_middleware(  # type: ignore
     CORSMiddleware,
     allow_origins=["*"], 
@@ -24,6 +26,8 @@ if not api_key:
     raise ValueError("No API key found. Check your .env file!")
 
 client = genai.Client(api_key=api_key)
+
+
 
 class GameSetupRequest(BaseModel):
     case_theme: str      # e.g., "The Poisoned Professor"

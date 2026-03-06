@@ -1,17 +1,39 @@
-const axios = require('axios');
+const axios = require("axios")
 
-async function generateMystery(difficulty, theme = "Cyberpunk") {
+const AI_SERVICE_URL = "http://127.0.0.1:8000"
+
+async function startCase(data) {
   try {
-    // This MUST match the Python server in main.py
-    const response = await axios.post('http://127.0.0.1:8000/api/start-case', {
-      case_theme: theme,
-      difficulty: difficulty
-    });
-    return response.data;
+    const response = await axios.post(`${AI_SERVICE_URL}/api/start-case`, data)
+    return response.data
   } catch (error) {
-    console.error("AI Service Error:", error.message);
-    throw error;
+    console.error("AI startCase error:", error.message)
+    throw error
   }
 }
 
-module.exports = { generateMystery };
+async function chatWithSuspect(data) {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/api/chat`, data)
+    return response.data
+  } catch (error) {
+    console.error("AI chat error:", error.message)
+    throw error
+  }
+}
+
+async function accuse(data) {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/api/accuse`, data)
+    return response.data
+  } catch (error) {
+    console.error("AI accuse error:", error.message)
+    throw error
+  }
+}
+
+module.exports = {
+  startCase,
+  chatWithSuspect,
+  accuse
+}
