@@ -16,6 +16,7 @@ interface CaseData {
   narration: string;       // Replaced 'story'
   suspects: Suspect[];     // Array of objects instead of strings
   actual_murderer: string; // Replaced 'culprit'
+  difficulty_level: string; 
   explanation?: string;    // Kept as optional for the Result page
 }
 
@@ -32,9 +33,9 @@ export default function App() {
     if (currentPage === 'HOME') {
       const timer = setTimeout(() => {
         setCurrentPage('SELECTION');
-      }, 4000); 
+      }, 4000);
 
-      return () => clearTimeout(timer); 
+      return () => clearTimeout(timer);
     }
   }, [currentPage]);
 
@@ -46,9 +47,9 @@ export default function App() {
       const response = await fetch('http://127.0.0.1:5001/api/start-case', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          difficulty: difficulty, 
-          case_theme: theme 
+        body: JSON.stringify({
+          difficulty: difficulty,
+          case_theme: theme
         }),
       });
 
@@ -56,9 +57,10 @@ export default function App() {
       setActiveCase({
         ...data,
         theme_name: theme,
-        image_keyword: keyword 
+        image_keyword: keyword,
+        difficulty_level: difficulty
       });
-      
+
       setCurrentPage('GAME');
     } catch (err) {
       console.error("Fetch error:", err);
@@ -70,10 +72,15 @@ export default function App() {
 
   // 2. Updated to compare against 'actual_murderer'
   const handleAccuse = (suspectName: string) => {
-  if (!activeCase) return;
-  // Use actual_murderer to match the Python API
-  setIsCorrect(suspectName === activeCase.actual_murderer);
-  setCurrentPage('RESULT');
+    if (!activeCase) return;
+    // Use actual_murderer to match the Python API
+    setIsCorrect(suspectName === activeCase.actual_murderer);
+    setCurrentPage('RESULT');
+  };
+
+  const handleAbort = () => {
+  setActiveCase(null);
+  setCurrentPage('SELECTION');
 };
 
   return (
@@ -87,7 +94,7 @@ export default function App() {
         )}
 
         {currentPage === 'GAME' && activeCase && (
-          <Game activeCase={activeCase} onAccuse={handleAccuse} />
+          <Game activeCase={activeCase} onAccuse={handleAccuse} onAbort={handleAbort} />
         )}
 
         {currentPage === 'RESULT' && activeCase && (
