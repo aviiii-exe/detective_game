@@ -11,7 +11,7 @@ interface CaseSummary {
 
 // Define the props passed to this component
 interface SelectionProps {
-  onGenerate: (theme: string, difficulty: string) => void;
+  onGenerate: (theme: string, difficulty: string, keyword: string) => void;
 }
 
 export default function Selection({ onGenerate }: SelectionProps) {
@@ -36,7 +36,7 @@ export default function Selection({ onGenerate }: SelectionProps) {
 
     try {
       // Call the Node.js bridge
-      const response = await fetch('http://localhost:5000/api/generate-case-list', {
+      const response = await fetch('http://127.0.0.1:5001/api/generate-case-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ difficulty: difficulty }),
@@ -241,7 +241,7 @@ export default function Selection({ onGenerate }: SelectionProps) {
                   Abort
                 </button>
                 <button 
-                  onClick={() => onGenerate(selectedCase.title, selectedDifficulty)}
+                  onClick={() => onGenerate(selectedCase.title, selectedDifficulty!, selectedCase.keyword)}
                   className="flex-1 px-6 py-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500 font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-cyan-500 hover:text-black hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all duration-300"
                 >
                   Establish Secure Uplink

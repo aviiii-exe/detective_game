@@ -40,10 +40,10 @@ export default function App() {
 
   // Fetching the case through the Node bridge (Port 5000)
   // UPDATED: Now takes both theme and difficulty from the Selection screen
-  const handleGenerateCase = async (theme: string, difficulty: string) => {
+  const handleGenerateCase = async (theme: string, difficulty: string, keyword: string) => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/generate-case', {
+      const response = await fetch('http://127.0.0.1:5001/api/start-case', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -53,11 +53,16 @@ export default function App() {
       });
 
       const data = await response.json();
-      setActiveCase(data);
+      setActiveCase({
+        ...data,
+        theme_name: theme,
+        image_keyword: keyword 
+      });
+      
       setCurrentPage('GAME');
     } catch (err) {
       console.error("Fetch error:", err);
-      alert("Neural Link Failed! Check if Python server is on 8000 and Node is on 5000.");
+      alert("Neural Link Failed! Ensure Node (5000) and Python (8000) are running.");
     } finally {
       setLoading(false);
     }
