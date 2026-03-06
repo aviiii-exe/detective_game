@@ -11,6 +11,7 @@ interface Suspect {
 }
 
 interface CaseData {
+  gameId: string;
   theme_name: string;      // ADDED: For dynamic backgrounds & titles
   image_keyword: string;   // ADDED: For dynamic backgrounds & titles
   narration: string;       // Replaced 'story'
