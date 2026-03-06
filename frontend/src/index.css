@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+@import "tailwindcss";
+
 
 @keyframes loading-bar {
   0% { transform: translateX(-100%); }

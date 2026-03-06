@@ -2,6 +2,16 @@ const axios = require("axios")
 
 const AI_SERVICE_URL = "http://127.0.0.1:8000"
 
+async function generateCaseList(data) {
+  try {
+    const response = await axios.post(`${AI_SERVICE_URL}/api/generate-case-list`, data)
+    return response.data
+  } catch (error) {
+    console.error("AI case list error:", error.message)
+    throw error
+  }
+}
+
 async function startCase(data) {
   try {
     const response = await axios.post(`${AI_SERVICE_URL}/api/start-case`, data)
@@ -33,6 +43,7 @@ async function accuse(data) {
 }
 
 module.exports = {
+  generateCaseList,
   startCase,
   chatWithSuspect,
   accuse

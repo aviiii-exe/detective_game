@@ -2,7 +2,9 @@ const express = require("express");
 
 const router = express.Router();
 
-const {startGame, chat, makeAccusation} = require("../controllers/caseController");
+const { getCaseList, startGame, chat, makeAccusation } = require("../controllers/caseController");
+
+router.post("/generate-case-list", getCaseList);
 
 router.post("/start-case", startGame);
 
