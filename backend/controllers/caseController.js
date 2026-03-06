@@ -1,5 +1,6 @@
 const { generateCaseList, startCase, chatWithSuspect, accuse } = require("../services/aiService.js");
 const Game = require("../models/Game");
+const mongoose = require("mongoose");
 
 async function startGame(req, res) {
   try {
@@ -38,7 +39,10 @@ async function getCaseList(req, res) {
 async function chat(req, res) {
   try {
     const { gameId, ...chatPayload } = req.body;
-    const game = await Game.findById(gameId);
+    console.log("GameId received:", gameId, typeof gameId)
+    
+
+    const game = await Game.findById(new mongoose.Types.ObjectId(gameId));
 
     if (!game) {
       return res.status(404).json({ error: "Game not found" });
@@ -62,7 +66,7 @@ async function chat(req, res) {
 async function makeAccusation(req, res) {
   try {
     const { gameId, accused_suspect, user_reason } = req.body;
-    const game = await Game.findById(gameId);
+    const game = await Game.findById(new mongoose.Types.ObjectId(gameId));
 
     if (!game) {
       return res.status(404).json({ error: "Game not found" });
