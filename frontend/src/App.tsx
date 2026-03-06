@@ -72,12 +72,31 @@ export default function App() {
   };
 
   // 2. Updated to compare against 'actual_murderer'
-  const handleAccuse = (suspectName: string) => {
-    if (!activeCase) return;
-    // Use actual_murderer to match the Python API
-    setIsCorrect(suspectName === activeCase.actual_murderer);
+  const handleAccuse = async (suspectName: string, reason: string) => {
+  if (!activeCase) return;
+  setLoading(true);
+  try {
+    // Calling teammate's new /accuse endpoint
+    const response = await fetch('http://127.0.0.1:5001/api/accuse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gameId: activeCase.gameId, //
+        accused_suspect: suspectName,
+        user_reason: reason //
+      }),
+    });
+
+    const data = await response.json(); // returns { success: boolean, message: string }
+    setIsCorrect(data.success);
+    setActiveCase({ ...activeCase, explanation: data.message });
     setCurrentPage('RESULT');
-  };
+  } catch (err) {
+    alert("Connection to AI Judge failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAbort = () => {
   setActiveCase(null);
