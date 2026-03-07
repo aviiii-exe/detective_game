@@ -54,6 +54,10 @@ export default function App() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error("AI Link Severed: The AI quota might be exceeded.");
+    }
+
       const data = await response.json();
       setActiveCase({
         ...data,
@@ -87,9 +91,6 @@ export default function App() {
       }),
     });
 
-    if (!response.ok) {
-        throw new Error("AI Link Severed: The AI quota might be exceeded.");
-    }
 
     const data = await response.json(); // returns { success: boolean, message: string }
     setIsCorrect(data.success);
