@@ -8,7 +8,7 @@ const gameSchema = new mongoose.Schema({
   questions_used: {
     type: Map,
     of: Number,
-    default: 0
+    default: {}
   },
   status: {
     type: String,
