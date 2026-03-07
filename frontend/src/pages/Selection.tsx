@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import DotGrid from '../components/DotGrid';
 
-// Define the structure of a single case summary from the AI
 interface CaseSummary {
   id: number;
   title: string;
@@ -9,7 +8,6 @@ interface CaseSummary {
   keyword: string;
 }
 
-// Define the props passed to this component
 interface SelectionProps {
   onGenerate: (theme: string, difficulty: string, keyword: string) => void;
 }
@@ -19,10 +17,9 @@ export default function Selection({ onGenerate }: SelectionProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
   const [caseDatabase, setCaseDatabase] = useState<CaseSummary[]>([]);
   const [selectedCase, setSelectedCase] = useState<CaseSummary | null>(null);
-  const [isLoadingList, setIsLoadingList] = useState(false); // New loading state
+  const [isLoadingList, setIsLoadingList] = useState(false); 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Avinav's original button definitions
   const modes = [
     { id: 'NOVICE', code: 'CASE_01', color: '#22d3ee', difficulty: 'LOW_RISK' },
     { id: 'INTERMEDIATE', code: 'CASE_04', color: '#fbbf24', difficulty: 'MODERATE' },
@@ -32,10 +29,9 @@ export default function Selection({ onGenerate }: SelectionProps) {
   // --- FUNCTION TO FETCH THE AI CASE LIST ---
   const fetchCaseList = async (difficulty: string) => {
     setIsLoadingList(true);
-    setSelectedDifficulty(difficulty); // Move to the next view immediately so loading shows there
+    setSelectedDifficulty(difficulty); 
 
     try {
-      // Call the Node.js bridge
       const response = await fetch('http://127.0.0.1:5001/api/generate-case-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,17 +39,17 @@ export default function Selection({ onGenerate }: SelectionProps) {
       });
 
       const data = await response.json();
-      // Duplicate the 6 cases to create the infinite scroll illusion
+      // Duplicate the cases 3 times to create the infinite scroll illusion
       const infiniteList = [...data.cases, ...data.cases, ...data.cases];
       setCaseDatabase(infiniteList);
-      // Set the first case as the default selected one
+      
       if (data.cases.length > 0) {
         setSelectedCase(data.cases[0]);
       }
     } catch (error) {
       console.error("Failed to fetch case list:", error);
       alert("Failed to connect to the Case Database. Is the backend running?");
-      setSelectedDifficulty(null); // Go back to main menu on error
+      setSelectedDifficulty(null);
     } finally {
       setIsLoadingList(false);
     }
@@ -62,24 +58,31 @@ export default function Selection({ onGenerate }: SelectionProps) {
   // Infinite scroll centering logic
   useEffect(() => {
     if (selectedDifficulty && !isLoadingList && scrollRef.current && caseDatabase.length > 0) {
+      // Snap to exactly the start of the middle set
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight / 3;
     }
   }, [selectedDifficulty, isLoadingList, caseDatabase]);
 
-  // Infinite scroll looping logic
+  // REFACTORED: Seamless Infinite scroll looping logic
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    if (scrollTop < 100) {
-      scrollRef.current.scrollTop = scrollHeight / 2;
-    } else if (scrollTop + clientHeight > scrollHeight - 100) {
-      scrollRef.current.scrollTop = (scrollHeight / 2) - clientHeight;
+    
+    // The exact pixel height of ONE set of cases (since we duplicated it 3 times)
+    const singleSetHeight = scrollHeight / 3;
+
+    // If we scroll too far up (into the first set), seamlessly jump down by one full set
+    if (scrollTop <= 10) {
+      scrollRef.current.scrollTop = scrollTop + singleSetHeight;
+    } 
+    // If we scroll too far down (into the third set), seamlessly jump up by one full set
+    else if (scrollTop + clientHeight >= scrollHeight - 10) {
+      scrollRef.current.scrollTop = scrollTop - singleSetHeight;
     }
   };
 
-
   // -----------------------------------------------------------------
-  // VIEW A: AVINAV'S 3-BUTTON UI
+  // VIEW A: 3-BUTTON UI
   // -----------------------------------------------------------------
   if (!selectedDifficulty) {
     return (
@@ -102,7 +105,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
             {modes.map((mode) => (
               <button
                 key={mode.id}
-                // *** CHANGE: Call fetchCaseList instead of just setting state ***
                 onClick={() => fetchCaseList(mode.id)}
                 style={{ '--case-color': mode.color } as React.CSSProperties}
                 className="group relative flex flex-col text-left transition-all duration-500 hover:-translate-y-2"
@@ -139,7 +141,7 @@ export default function Selection({ onGenerate }: SelectionProps) {
   }
 
   // -----------------------------------------------------------------
-  // VIEW B: INFINITE SCROLL CASE SELECTOR (With Loading State)
+  // VIEW B: INFINITE SCROLL CASE SELECTOR
   // -----------------------------------------------------------------
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#05070a]">
@@ -149,7 +151,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
 
       <div className="relative z-20 w-full max-w-6xl h-[80vh] flex flex-col md:flex-row bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
         
-        {/* --- LOADING OVERLAY --- */}
         {isLoadingList && (
           <div className="absolute inset-0 z-30 bg-black/90 flex flex-col items-center justify-center">
             <div className="w-16 h-16 border-t-2 border-r-2 border-cyan-500 rounded-full animate-spin mb-8" />
@@ -169,10 +170,10 @@ export default function Selection({ onGenerate }: SelectionProps) {
           <div 
             ref={scrollRef}
             onScroll={handleScroll}
-            className="h-full overflow-y-scroll scroll-smooth"
+            // REFACTORED: Removed 'scroll-smooth' so JS jumping is invisible!
+            className="h-full overflow-y-scroll"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {/* Only render list if we have data and aren't loading */}
             {!isLoadingList && caseDatabase.length > 0 && caseDatabase.map((c, index) => (
               <div 
                 key={`${c.id}-${index}`}
@@ -196,8 +197,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
 
         {/* RIGHT SIDE: SELECTED CASE PREVIEW */}
         <div className="w-full md:w-1/2 h-1/2 md:h-full p-10 flex flex-col justify-between font-mono">
-          
-          {/* Only show preview if a case is selected and not loading */}
           {!isLoadingList && selectedCase ? (
             <>
               <div>
@@ -208,7 +207,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
                   </span>
                 </div>
 
-                {/* Pollinations AI Image generated from the keyword */}
                 <div className="relative w-full h-56 border border-white/10 mb-8 overflow-hidden group">
                   <div className="absolute inset-0 bg-cyan-500/10 mix-blend-overlay z-10 pointer-events-none" />
                   <img 
@@ -234,7 +232,7 @@ export default function Selection({ onGenerate }: SelectionProps) {
                 <button 
                   onClick={() => {
                     setSelectedDifficulty(null);
-                    setCaseDatabase([]); // Clear data on back
+                    setCaseDatabase([]); 
                   }}
                   className="px-6 py-4 text-[10px] font-bold text-white/30 border border-white/10 hover:bg-white/5 hover:text-white transition-all uppercase tracking-widest"
                 >
@@ -249,7 +247,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
               </div>
             </>
           ) : (
-            /* Empty state if loading or no case selected */
             <div className="h-full flex items-center justify-center text-[10px] text-white/30 tracking-widest uppercase">
               {isLoadingList ? "Awaiting Data..." : "Select a Case File..."}
             </div>
