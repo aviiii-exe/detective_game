@@ -11,7 +11,8 @@ load_dotenv()
 
 app = FastAPI()
 
-app.add_middleware(  
+
+app.add_middleware(  # type: ignore
     CORSMiddleware,
     allow_origins=["*"], 
     allow_credentials=True,
@@ -115,8 +116,10 @@ async def generate_case_list(request: CaseListRequest):
 
 @app.post("/api/start-case")
 async def start_case(request: GameSetupRequest):
-    print(f"Starting case '{request.case_theme}' on LOCAL GPU...")
-    
+    """
+    Trigger 1: User selects case and difficulty.
+    Action: Generate the opening narration AND the suspects dynamically.
+    """
     prompt = f"""
     You are a master mystery writer creating a game. 
     Theme: '{request.case_theme}'
@@ -143,21 +146,42 @@ async def start_case(request: GameSetupRequest):
         "actual_murderer": "The exact name of the suspect who actually committed the crime."
     }}
     """
-    
-    try:
-        raw_text = ask_local_gpu(prompt, expect_json=True)
-        start_idx = raw_text.find('{')
-        end_idx = raw_text.rfind('}') + 1
-        
-        if start_idx != -1 and end_idx != 0:
-            clean_json = raw_text[start_idx:end_idx]
-            return json.loads(clean_json)
-        else:
-            raise ValueError("No JSON found")
-    except Exception as e:
-        print(f"Error starting case: {e}")
-        raise HTTPException(status_code=500, detail="Local AI failed to generate case")
 
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        
+        # Clean up the response
+        raw_text = response.text.replace("```json", "").replace("```", "").strip()
+        
+        # FIX: Remove trailing commas that commonly break json.loads
+        raw_text = re.sub(r',\s*]', ']', raw_text)
+        raw_text = re.sub(r',\s*}', '}', raw_text)
+        
+        game_data = json.loads(raw_text)
+        return game_data
+        
+    except Exception as e:
+        # THE SAFETY NET! 
+        print(f"CRITICAL ERROR IN START-CASE: {e}")
+        try:
+            print(f"RAW TEXT WAS: {raw_text}")
+        except:
+            pass
+            
+        # Fallback Case so the frontend never crashes to a white screen!
+        return {
+            "narration": "The neural uplink encountered severe interference. Forensic data is corrupted, but you must proceed with the cached emergency dossier.",
+            "suspects": [
+                {"name": "System Glitch", "hover_bio": "An anomaly in the database. Its alibi is mathematically impossible."},
+                {"name": "Corrupt Sector", "hover_bio": "Missing data fragments. Refuses to compile its memory logs."},
+                {"name": "Phantom User", "hover_bio": "An unauthorized access log. Leaves no digital footprints."},
+                {"name": "The Architect", "hover_bio": "The one who wrote the flawed code. Always blames the framework."}
+            ],
+            "actual_murderer": "The Architect"
+        }
 
 @app.post("/api/chat")
 async def chat_with_suspect(request: ChatRequest):
