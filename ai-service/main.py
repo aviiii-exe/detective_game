@@ -11,7 +11,6 @@ load_dotenv()
 
 app = FastAPI()
 
-app = FastAPI()
 
 app.add_middleware(  # type: ignore
     CORSMiddleware,
@@ -125,8 +124,6 @@ async def start_case(request: GameSetupRequest):
     Trigger 1: User selects case and difficulty.
     Action: Generate the opening narration AND the suspects dynamically.
     """
-    
-    # 1. We write a highly specific prompt asking for exactly what the frontend needs
     prompt = f"""
     You are a master mystery writer creating a game. 
     Theme: '{request.case_theme}'
@@ -158,18 +155,41 @@ async def start_case(request: GameSetupRequest):
     }}
     """
 
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt
-    )
-    
-    # 3. Clean up the response (sometimes AI adds markdown formatting like ```json)
-    raw_text = response.text.replace("```json", "").replace("```", "").strip()
-    
-    # 4. Convert the text into a real Python dictionary and send it!
-    game_data = json.loads(raw_text)
-    
-    return game_data
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        
+        # Clean up the response
+        raw_text = response.text.replace("```json", "").replace("```", "").strip()
+        
+        # FIX: Remove trailing commas that commonly break json.loads
+        raw_text = re.sub(r',\s*]', ']', raw_text)
+        raw_text = re.sub(r',\s*}', '}', raw_text)
+        
+        game_data = json.loads(raw_text)
+        return game_data
+        
+    except Exception as e:
+        # THE SAFETY NET! 
+        print(f"CRITICAL ERROR IN START-CASE: {e}")
+        try:
+            print(f"RAW TEXT WAS: {raw_text}")
+        except:
+            pass
+            
+        # Fallback Case so the frontend never crashes to a white screen!
+        return {
+            "narration": "The neural uplink encountered severe interference. Forensic data is corrupted, but you must proceed with the cached emergency dossier.",
+            "suspects": [
+                {"name": "System Glitch", "hover_bio": "An anomaly in the database. Its alibi is mathematically impossible."},
+                {"name": "Corrupt Sector", "hover_bio": "Missing data fragments. Refuses to compile its memory logs."},
+                {"name": "Phantom User", "hover_bio": "An unauthorized access log. Leaves no digital footprints."},
+                {"name": "The Architect", "hover_bio": "The one who wrote the flawed code. Always blames the framework."}
+            ],
+            "actual_murderer": "The Architect"
+        }
 
 @app.post("/api/chat")
 async def chat_with_suspect(request: ChatRequest):
