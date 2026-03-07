@@ -1,6 +1,6 @@
 from http import client
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -28,7 +28,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 # --- PYDANTIC MODELS (Kept exactly the same) ---
 class GameSetupRequest(BaseModel):
     case_theme: str      
-    difficulty: str      
+    difficulty: str 
+    case_desc: str = ""     
 
 class ChatRequest(BaseModel):
     suspect_name: str
@@ -58,14 +59,21 @@ class CaseListResponse(BaseModel):
 # This makes calling your local GPU super clean
 def ask_local_gpu(prompt: str, expect_json: bool = False):
     payload = {
-        "model": "llama3.2",
+        "model": "llama3.2", # BACK TO THE TURBO ENGINE
         "prompt": prompt,
         "stream": False,
         "options": {
-            "temperature": 0.3, 
-            "num_ctx": 2048     
+            "temperature": 0.3,
+            "num_ctx": 2048,
+            "num_predict": 800 # Forces the AI to keep outputs concise and fast
         }
     }
+    
+    if expect_json:
+        payload["format"] = "json"
+        
+    response = requests.post("http://localhost:11434/api/generate", json=payload)
+# ... rest of your function
     
     if expect_json:
         payload["format"] = "json"
@@ -84,14 +92,16 @@ async def generate_case_list(request: CaseListRequest):
     print(f"Generating case list for difficulty: {request.difficulty} on LOCAL GPU...")
 
     prompt = f"""
-    You are a master mystery game designer. Generate a list of exactly 6 distinct murder mystery concepts for a player of "{request.difficulty}" skill level.
+    You are a master mystery game designer. Generate a list of exactly 5 distinct Indian murder mystery concepts for a player of "{request.difficulty}" skill level.
+
+    CRITICAL RULE: Keep descriptions to exactly ONE atmospheric sentence. Every case MUST have completely different physical evidence (e.g., a torn silk sari, a spilled cup of cutting chai, a broken glass bangle, a unique spice blend, a discarded train ticket). DO NOT use "cryptic messages", "notes", "keys", or "symbols".
 
     For each case, provide:
-    1. A catchy, noir-style Title.
-    2. A 2-sentence Description of the initial crime scene or premise.
-    3. A 4-5 word visual Keyword string to generate a noir/cyberpunk atmospheric image of the location (e.g., "rainy neon alleyway body", "gothic mansion library dark").
+    1. A catchy Title set in an Indian context (e.g., "The Malabar Hill Murder", "Blood in the Backwaters").
+    2. A strict 1-sentence Description of the initial crime scene or premise set somewhere in India.
+    3. A 4-5 word visual Keyword string to generate an atmospheric image of the Indian location.
 
-    Respond ONLY with a valid JSON object containing a single key "cases", which is a list of 6 objects. Each object must have "id" (numbered 1-6), "title", "desc", and "keyword".
+    Respond ONLY with a valid JSON object containing a single key "cases", which is a list of exactly 5 objects. Each object must have "id", "title", "desc", and "keyword".
     """
 
     try:
@@ -118,42 +128,59 @@ async def generate_case_list(request: CaseListRequest):
 
 @app.post("/api/start-case")
 async def start_case(request: GameSetupRequest):
-    """
-    Trigger 1: User selects case and difficulty.
-    Action: Generate the opening narration AND the suspects dynamically.
-    """
+    print(f"Starting case '{request.case_theme}' on LOCAL GPU...")
+    
     prompt = f"""
-    You are a master mystery writer creating a game. 
-    Theme: '{request.case_theme}'
+    You are a master mystery writer creating a game set in India. 
+    Title: '{request.case_theme}'
+    Premise: '{request.case_desc}'
     Difficulty: '{request.difficulty}'
     
     You must respond ONLY with a valid JSON object representing the game setup. Do not include any other text.
     Use this exact JSON structure:
     {{
-        "narration": "Write a highly suspenseful, 3-sentence opening narration setting the scene. Do not reveal the killer.",
+        "narration": "Write a highly suspenseful, atmospheric 3-sentence opening narration expanding on the Premise. Focus heavily on the vivid sights, sounds, and smells of the specific Indian location. End with a chilling observation about the physical crime scene. NEVER use the words 'cryptic', 'message', or 'symbol'.",
         "suspects": [
             {{
-                "name": "Character Name", 
+                "name": "CRITICAL: ONLY the character's name and a 1-2 word job title. (e.g., 'Rajesh Singh - Diplomat' or 'Priya Kapoor - Assistant'). MAXIMUM 5 WORDS.", 
                 "hover_bio": "Write a full, detailed 2-sentence description of who they are, their personality, and a subtle reason they might be a suspect."
             }},
             {{
-                "name": "Character Name", 
+                "name": "CRITICAL: ONLY the character's name and a 1-2 word job title. (e.g., 'Amitava Roy - Archaeologist'). MAXIMUM 5 WORDS.", 
                 "hover_bio": "Write a full, detailed 2-sentence description of who they are, their personality, and a subtle reason they might be a suspect."
             }},
             {{
-                "name": "Character Name", 
+                "name": "CRITICAL: ONLY the character's name and a 1-2 word job title. MAXIMUM 5 WORDS.", 
+                "hover_bio": "Write a full, detailed 2-sentence description of who they are, their personality, and a subtle reason they might be a suspect."
+            }},
+            {{
+                "name": "CRITICAL: ONLY the character's name and a 1-2 word job title. MAXIMUM 5 WORDS.", 
                 "hover_bio": "Write a full, detailed 2-sentence description of who they are, their personality, and a subtle reason they might be a suspect."
             }}
         ],
         "actual_murderer": "The exact name of the suspect who actually committed the crime."
     }}
     """
-
+    
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        # Firing up the local AI instead of Gemini
+        raw_text = ask_local_gpu(prompt, expect_json=True)
+        
+        print("--- RAW AI START-CASE RESPONSE ---")
+        print(raw_text)
+        
+        start_idx = raw_text.find('{')
+        end_idx = raw_text.rfind('}') + 1
+        
+        if start_idx != -1 and end_idx != 0:
+            clean_json = raw_text[start_idx:end_idx]
+            return json.loads(clean_json)
+        else:
+            raise ValueError("No JSON found")
+            
+    except Exception as e:
+        print(f"CRITICAL ERROR IN START-CASE: {e}")
+        raise HTTPException(status_code=500, detail="Local AI failed to generate case")
         
         # Clean up the response
         raw_text = response.text.replace("```json", "").replace("```", "").strip()
@@ -186,39 +213,33 @@ async def start_case(request: GameSetupRequest):
         }
 
 @app.post("/api/chat")
-async def chat_with_suspect(request: ChatRequest):
-    print(f"Chatting with {request.suspect_name} on LOCAL GPU...")
+async def chat_with_suspect(request: Request): # (Or whatever your request model is named)
+    data = await request.json()
+    suspect_name = data.get("suspect_name", "Suspect")
+    bio = data.get("suspect_bio", "")
+    question = data.get("question", "")
     
-    if request.is_murderer:
-        guilt_status = "You are GUILTY of the murder. You must hide this. Be evasive, give a fake alibi (like a fake time or place), or get defensive. NEVER confess."
-    else:
-        guilt_status = "You are INNOCENT. You did not kill anyone, but you might be hiding an embarrassing secret. Answer the questions, but act annoyed."
-
-    difficulty_rule = ""
-    if request.difficulty.lower() == "hard":
-        difficulty_rule = "Be very uncooperative, hostile, or give answers that are technically true but intentionally misleading."
-
+    print(f"--- INTERROGATING {suspect_name} ON LOCAL GPU ---")
+    
+    # Notice we give it the bio so it stays perfectly in character!
     prompt = f"""
-    You are roleplaying as a suspect in a murder mystery game. Do not break character. Do not act like an AI.
+    You are roleplaying as a suspect in a mystery game. 
+    Your Name: {suspect_name}
+    Your Background: {bio}
     
-    Your Name: {request.suspect_name}
-    Your Background: {request.suspect_bio}
+    The Detective just asked you: "{question}"
     
-    {guilt_status}
-    
-    The detective asks you: "{request.question}"
-    
-    STRICT RULES FOR YOUR RESPONSE:
-    1. Respond directly to the detective's question. If they ask about a time or place, you MUST mention a specific time or place.
-    2. Keep your answer brief, 1 to 2 short sentences maximum.
-    3. Reflect your personality from your background.
-    {difficulty_rule}
+    Respond entirely in character. Keep it to 2-3 sentences. Be defensive or evasive, but drop one subtle hint.
+    DO NOT use JSON formatting. Respond ONLY with your raw spoken dialogue.
     """
-
-    # Notice expect_json=False because we just want normal text for chat!
-    reply_text = ask_local_gpu(prompt, expect_json=False) 
-    return {"reply": reply_text.strip()}
-
+    
+    try:
+        # expect_json=False because we just want them to speak naturally
+        reply_text = ask_local_gpu(prompt, expect_json=False)
+        return {"reply": reply_text}
+    except Exception as e:
+        print(f"CRASH IN CHAT: {e}")
+        return {"error": str(e)}
 
 @app.post("/api/accuse")
 async def make_accusation(request: AccusationRequest):

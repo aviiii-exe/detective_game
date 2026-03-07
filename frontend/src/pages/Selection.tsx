@@ -9,7 +9,7 @@ interface CaseSummary {
 }
 
 interface SelectionProps {
-  onGenerate: (theme: string, difficulty: string, keyword: string) => void;
+  onGenerate: (theme: string, difficulty: string, keyword: string, desc: string) => void;
 }
 
 export default function Selection({ onGenerate }: SelectionProps) {
@@ -239,10 +239,10 @@ export default function Selection({ onGenerate }: SelectionProps) {
                   Abort
                 </button>
                 <button 
-                  onClick={() => onGenerate(selectedCase.title, selectedDifficulty!, selectedCase.keyword)}
+                  onClick={() => onGenerate(selectedCase.title, selectedDifficulty!, selectedCase.keyword, selectedCase.desc)}
                   className="flex-1 px-6 py-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500 font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-cyan-500 hover:text-black hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all duration-300"
                 >
-                  Establish Secure Uplink
+                Establish Secure Uplink
                 </button>
               </div>
             </>

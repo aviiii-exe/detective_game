@@ -40,9 +40,9 @@ export default function App() {
     }
   }, [currentPage]);
 
-  // Fetching the case through the Node bridge (Port 5000)
   // UPDATED: Now takes both theme and difficulty from the Selection screen
-  const handleGenerateCase = async (theme: string, difficulty: string, keyword: string) => {
+  // Fetching the case through the Node bridge (Port 5000)
+  const handleGenerateCase = async (theme: string, difficulty: string, keyword: string, desc: string) => {
     setLoading(true);
     try {
       const response = await fetch('http://127.0.0.1:5001/api/start-case', {
@@ -50,13 +50,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           difficulty: difficulty,
-          case_theme: theme
+          case_theme: theme,
+          case_desc: desc // <--- THIS IS THE MAGIC LINK!
         }),
       });
 
       if (!response.ok) {
         throw new Error("AI Link Severed: The AI quota might be exceeded.");
-    }
+      }
 
       const data = await response.json();
       setActiveCase({

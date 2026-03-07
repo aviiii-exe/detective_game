@@ -87,7 +87,6 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
     setLoadingChat(true);
 
     try {
-      // B. Update local count (assuming backend success)
       setQuestionsAsked({
         ...questionsAsked,
         [selectedSuspect.name]: currentCount + 1
@@ -101,14 +100,25 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
           suspect_name: selectedSuspect.name,
           question: question,
           suspect_bio: selectedSuspect.hover_bio,
-          // Removed is_murderer: preventing frontend cheating!
           difficulty: activeCase.difficulty_level
         })
       });
+      
       const data = await res.json();
-      setChatLog([...newLog, { role: selectedSuspect.name, text: data.reply || data.message }]);
+
+      // SAFETY NET 1: Catch actual backend crashes and print them into the chat!
+      if (!res.ok || data.error) {
+         setChatLog([...newLog, { role: 'SYSTEM', text: `[SYSTEM ERROR: ${data.error || 'Neural link severed.'}]` }]);
+         return;
+      }
+
+      // SAFETY NET 2: Grab the text no matter what key Python uses to send it
+      const aiText = data.reply || data.response || data.message || (typeof data === 'string' ? data : "Subject remains silent.");
+      
+      setChatLog([...newLog, { role: selectedSuspect.name, text: aiText }]);
+
     } catch (err) {
-      alert("Neural link unstable. Suspect is silent.");
+      setChatLog([...newLog, { role: 'SYSTEM', text: '[CRITICAL FAILURE: Unable to reach interrogation engine.]' }]);
     } finally {
       setLoadingChat(false);
     }
