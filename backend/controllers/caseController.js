@@ -6,6 +6,10 @@ async function startGame(req, res) {
   try {
     
     const data = await startCase(req.body);
+
+    console.log("--- DATA RECEIVED FROM PYTHON ---");
+    console.log(data);
+
     const suspects = data.suspects.map(s => s.name);
 
     
@@ -23,6 +27,7 @@ async function startGame(req, res) {
     });
 
   } catch (error) {
+    console.error("NODE START-GAME CRASH:", error);
     res.status(500).json({ error: "Failed to start case" });
   }
 }
@@ -38,7 +43,7 @@ async function getCaseList(req, res) {
 
 async function chat(req, res) {
   try {
-    const { gameId, ...chatPayload } = req.body;
+    const { gameId, suspect_name, ...chatPayload } = req.body;
     
 
     const game = await Game.findById(new mongoose.Types.ObjectId(gameId));
@@ -61,6 +66,7 @@ async function chat(req, res) {
     res.json(data);
 
   } catch (error) {
+    console.error("CHAT ERROR:", error);
     res.status(500).json({ error: "Failed to chat" });
   }
 }

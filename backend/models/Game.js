@@ -6,7 +6,8 @@ const gameSchema = new mongoose.Schema({
   suspects: [String],
   actual_murderer: String,
   questions_used: {
-    type: Number,
+    type: Map,
+    of: Number,
     default: 0
   },
   status: {
