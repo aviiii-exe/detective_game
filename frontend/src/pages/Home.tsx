@@ -15,7 +15,7 @@ export default function Home() {
           {/* Fingerprint / Scanner Icon Area */}
           <div className="relative w-full h-full border border-purple-500/10 flex items-center justify-center overflow-hidden">
             {/* The Scanning Beam */}
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-purple-400 shadow-[0_0_15px_#22d3ee] animate-[scan-beam_2s_ease-in-out_infinite] z-30" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-purple-400 shadow-[0_0_15px_#a855f7] animate-[scan-beam_2s_ease-in-out_infinite] z-30" />
 
             {/* Silhouette / Grid Placeholder */}
             <div className="opacity-20 flex flex-col items-center space-y-1">
@@ -44,8 +44,8 @@ export default function Home() {
 
         {/* 2. THE NOIR TITLE */}
         <div className="text-center space-y-4">
-          <h1 className="text-6xl font-black italic tracking-tighter text-white uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-            AI CASE <span className="text-purple-500">DETECTIVE</span>
+          <h1 className="text-6xl font-black italic tracking-tighter text-white uppercase [text-shadow:0_0_30px_#a855f7]">
+            THE TURING <span className="text-purple-500 [text-shadow:0_0_40px_#a855f7]">MURDERS</span>
           </h1>
 
           <div className="font-typewriter text-purple-500/80 text-sm italic tracking-widest">
@@ -55,7 +55,7 @@ export default function Home() {
 
         {/* BOTTOM LOADING BAR */}
         <div className="w-64 space-y-2">
-          <div className="flex justify-between text-[7px] text-purple-500/40 tracking-widest uppercase">
+          <div className="flex justify-between text-[9px] text-purple-500/60 tracking-widest uppercase">
             <span>Decrypting_Data</span>
             <span>69%</span>
           </div>

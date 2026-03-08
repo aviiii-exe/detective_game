@@ -21,9 +21,9 @@ export default function Selection({ onGenerate }: SelectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const modes = [
-    { id: 'NOVICE', code: 'CASE_01', color: '#10b981', difficulty: 'LOW_RISK' },
-    { id: 'INTERMEDIATE', code: 'CASE_04', color: '#fbbf24', difficulty: 'MODERATE' },
-    { id: 'EXPERT', code: 'CASE_09', color: '#e11d48', difficulty: 'CRITICAL' }
+    { id: 'NOVICE',label: 'STANDARD', code: 'TIER_01', color: '#10b981', difficulty: 'LOW_RISK', time: '10 minutes' },
+    { id: 'INTERMEDIATE',label: 'RESTRICTED', code: 'TIER_02', color: '#fbbf24', difficulty: 'MODERATE', time: '15 minutes' },
+    { id: 'EXPERT',label: 'CLASSIFIED', code: 'TIER_03', color: '#e11d48', difficulty: 'CRITICAL', time: '20 minutes' }
   ];
 
   // --- FUNCTION TO FETCH THE AI CASE LIST ---
@@ -93,10 +93,10 @@ export default function Selection({ onGenerate }: SelectionProps) {
 
         <div className="relative z-20 w-full max-w-6xl p-10 space-y-16">
           <div className="space-y-2 border-l-4 border-purple-500 pl-6">
-            <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase">
+            <h2 className="text-5xl font-black italic tracking-tighter text-white uppercase">
               Select Investigation
             </h2>
-            <p className="text-xs tracking-[0.5em] text-purple-500/50 font-bold uppercase">
+            <p className="text-s tracking-[0.5em] text-purple-500/70 font-bold uppercase">
               Forensic_Database // Awaiting_Selection
             </p>
           </div>
@@ -110,23 +110,30 @@ export default function Selection({ onGenerate }: SelectionProps) {
                 className="group relative flex flex-col text-left transition-all duration-500 hover:-translate-y-2"
               >
                 <div className="w-24 h-6 bg-white/5 border-t border-x border-white/10 rounded-t-lg ml-2 transition-colors group-hover:bg-[var(--case-color)] group-hover:text-black flex items-center justify-center">
-                  <span className="text-[8px] font-bold tracking-widest">{mode.code}</span>
+                  <span className="text-[10px] font-bold tracking-widest">{mode.code}</span>
                 </div>
 
                 <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-8 shadow-2xl relative overflow-hidden group-hover:border-[var(--case-color)]/50">
-                  <span className="absolute top-4 right-4 text-[8px] font-bold text-white/20 tracking-tighter uppercase">
-                    Ref: {mode.difficulty}
+                  <span className="absolute top-4 right-4 text-[8px] font-bold text-white/50 tracking-tighter uppercase">
+                    Ref: {mode.id}
                   </span>
 
                   <h3 className="text-3xl font-black italic text-white/40 group-hover:text-white transition-colors mb-4">
-                    {mode.id}
+                    {mode.label}
                   </h3>
+                  
 
-                  <div className="h-px w-full bg-white/5 mb-4 group-hover:bg-[var(--case-color)]/20" />
-
-                  <p className="text-[10px] text-white/30 uppercase tracking-widest leading-relaxed">
-                    Initializing forensic link for difficulty level: {mode.id}.
-                  </p>
+                  <div className="w-full pt-4 border-t border-white/10 flex flex-col space-y-2">
+                      <div className="flex justify-between items-center text-[9px] uppercase tracking-widest font-mono">
+                        <span className="text-white/40">Threat_Level:</span>
+                        <span style={{ color: mode.color }}>{mode.difficulty}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-[9px] uppercase tracking-widest font-mono">
+                        <span className="text-white/40">Time_Allocation:</span>
+                        <span className="text-white/55">{mode.time}</span>
+                      </div>
+                    </div>
 
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/5 group-hover:border-[var(--case-color)] transition-colors" />
                 </div>
@@ -219,9 +226,6 @@ export default function Selection({ onGenerate }: SelectionProps) {
                     alt="Case Location"
                     className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
                   />
-                  <div className="absolute bottom-2 right-2 z-20 text-[8px] text-purple-500 bg-black/80 px-2 font-mono tracking-widest">
-                    REC_FEED_ONLINE // LIVE
-                  </div>
                 </div>
 
                 <h1 className="text-4xl font-black italic text-white mb-4 uppercase tracking-tighter">{selectedCase.title}</h1>

@@ -42,11 +42,25 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
   // Maps suspect name to questions asked: e.g., { "Suspect A": 2, "Suspect B": 1 }
   const [questionsAsked, setQuestionsAsked] = useState<Record<string, number>>({});
 
+  // NEW: Evidence Gathering States
+  const [evidenceLog, setEvidenceLog] = useState<{suspect: string, clue: string}[]>([]);
+  const [activeEvidenceSelections, setActiveEvidenceSelections] = useState<number[]>([]);
+
+  // FEATURE: Precision Text Extractor State
+  const [snippetPopup, setSnippetPopup] = useState<{show: boolean, x: number, y: number, text: string, suspect: string} | null>(null);
+
+  // Close the popup if they click anywhere else on the screen
+  useEffect(() => {
+    const dismissPopup = () => setSnippetPopup(null);
+    document.addEventListener('mousedown', dismissPopup);
+    return () => document.removeEventListener('mousedown', dismissPopup);
+  }, []);
+
   const getInitialTime = () => {
     switch (activeCase.difficulty_level) {
-      case 'EXPERT': return 12 * 60;
-      case 'INTERMEDIATE': return 8 * 60;
-      default: return 5 * 60;
+      case 'EXPERT': return 20 * 60;
+      case 'INTERMEDIATE': return 15 * 60;
+      default: return 1 * 60;
     }
   };
 
@@ -80,6 +94,28 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
       setSelectedSuspect(null); 
       setIsClosingModal(false); 
     }, 400); // synced with css duration
+  };
+
+  // FEATURE: Capture highlighted text
+  const handleTextHighlight = (e: React.MouseEvent, role: string) => {
+    // We only extract from suspects, not the Detective or System
+    if (role === 'Detective' || role === 'SYSTEM') return;
+
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+
+    // If they highlighted more than 5 characters, show the popup!
+    if (text && text.length > 5) {
+      setSnippetPopup({
+        show: true,
+        x: e.clientX,
+        y: e.clientY - 40, // Put it 40px above their mouse cursor
+        text: text,
+        suspect: role
+      });
+    } else {
+      setSnippetPopup(null);
+    }
   };
 
   // FEATURE: Updated Chat Handler
@@ -169,7 +205,7 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
           {/* HEADER ROW */}
           <div className="w-full flex justify-between items-start mb-8 relative z-20 shrink-0">
             <button
-              onClick={() => setShowAbortConfirm(true)} // 🚨 Trigger Custom Abort UI
+              onClick={() => setShowAbortConfirm(true)} // Trigger Custom Abort UI
               className="w-12 h-12 rounded-full border border-white/50 flex items-center justify-center hover:bg-white/7 group transition-all"
             >
               <span className="text-white/40 group-hover:text-white transition-transform">←</span>
@@ -247,7 +283,7 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
               {/*REFACTORED: Now uses our smooth close handler */}
               <button 
                 onClick={handleCloseModal} 
-                className="text-white/20 hover:text-purple-400 transition-colors uppercase text-[10px] font-bold tracking-widest"
+                className="text-white/30 hover:text-purple-400 transition-colors uppercase text-[12px] font-bold tracking-widest"
               >
                 [ CLOSE_FILE ]
               </button>
@@ -255,24 +291,61 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
 
             <div className="flex-1 flex overflow-hidden">
               {/* Left: Suspect Dossier */}
-              <div className="w-1/3 p-8 border-r border-white/10 bg-white/5 overflow-y-auto">
-                <span className="text-[8px] text-purple-500 font-bold uppercase tracking-widest block mb-4">Forensic_Bio</span>
-                <p className="text-xs text-white/60 leading-relaxed italic font-typewriter">{selectedSuspect.hover_bio}</p>
+              {/* REFACTORED: Made this a flex-col so we can push the button to the bottom */}
+              <div className="w-1/3 p-8 border-r border-white/10 bg-white/5 flex flex-col overflow-hidden">
+                
+                {/* Scrollable Upper Area */}
+                <div className="flex-1 overflow-y-auto pr-4 space-y-8" style={{ scrollbarWidth: 'thin', scrollbarColor: '#a855f730 transparent' }}>
+                  
+                  {/* Bio */}
+                  <div>
+                    <span className="text-[10px] text-purple-500 font-bold uppercase tracking-widest block mb-2">Forensic_Bio</span>
+                    <p className="text-sm text-white/60 leading-relaxed italic font-typewriter">{selectedSuspect.hover_bio}</p>
+                  </div>
 
-                {/* FEATURE 1: Questions remaining tracker */}
-                <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                  <span className="text-[9px] text-white/30 uppercase tracking-widest block mb-1">Link_Questions_Used</span>
-                  <p className={`text-4xl font-mono ${(questionsAsked[selectedSuspect.name] || 0) >= 3 ? 'text-red-500 animate-pulse' : 'text-purple-500'}`}>
-                    {(questionsAsked[selectedSuspect.name] || 0)} <span className="text-sm text-white/40">/ 3</span>
-                  </p>
+                  {/* Questions remaining tracker */}
+                  <div className="pt-6 border-t border-white/10 text-center">
+                    <span className="text-[11px] text-white/30 uppercase tracking-widest block mb-1">Link_Questions_Asked</span>
+                    <p 
+                      key={questionsAsked[selectedSuspect.name] || 0} 
+                      className={`text-4xl font-mono ${(questionsAsked[selectedSuspect.name] || 0) >= 3 ? 'text-red-500 animate-pulse' : 'text-purple-500'}`}
+                    >
+                      {(questionsAsked[selectedSuspect.name] || 0)} <span className="text-sm text-white/40">/ 3</span>
+                    </p>
+                  </div>
+
+                  {/* The Extracted Evidence Inventory */}
+                  <div className="pt-6 border-t border-white/10">
+                    <span className="text-[9px] text-purple-500 font-bold uppercase tracking-widest block mb-4">Extracted_Data_Log</span>
+                    {evidenceLog.length === 0 ? (
+                      <p className="text-[10px] text-white/20 italic font-mono">No forensic data extracted yet...</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {evidenceLog.map((ev, idx) => (
+                          <div key={idx} className="p-2 border border-purple-500/30 bg-purple-500/5 text-[11px] font-mono text-white/60 relative group">
+                             <span className="text-purple-500 font-bold block mb-1">[{ev.suspect}]</span>
+                             <p className="line-clamp-3">{ev.clue}</p>
+                             <button 
+                               onClick={() => setEvidenceLog(prev => prev.filter((_, i) => i !== idx))}
+                               className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                             >x</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </div> {/* End Scrollable Upper Area */}
+
+                {/* REFACTORED: Sticky Bottom Area for the Button */}
+                <div className="pt-6 mt-auto shrink-0 border-t border-transparent">
+                  <button
+                    onClick={() => setIsAccusing(true)}
+                    className="w-full py-4 border border-red-500/50 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                  >
+                    Initiate_Arrest
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => setIsAccusing(true)}
-                  className="mt-12 w-full py-4 border border-red-500/50 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-                >
-                  Initiate_Arrest
-                </button>
               </div>
 
               {/* Right: The Terminal Chat */}
@@ -281,12 +354,30 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
                   <>
                     <div className="flex-1 overflow-y-auto space-y-4 font-mono text-[11px] mb-6 pr-4">
                       {chatLog.map((m, i) => (
-                        <div key={i} className={`p-3 border ${m.role === 'Detective' ? 'border-purple-500/30 bg-purple-500/5 ml-8' : m.role === 'SYSTEM' ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/5 mr-8'}`}>
+                        // REFACTORED: Removed the old "Extract Data" hover button from here
+                        <div key={i} className={`p-3 border relative group ${m.role === 'Detective' ? 'border-purple-500/30 bg-purple-500/5 ml-8' : m.role === 'SYSTEM' ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/5 mr-8'}`}>
+                          
+                          {/* NEW: Hover to extract evidence! */}
+                          {m.role !== 'Detective' && m.role !== 'SYSTEM' && (
+                            <button 
+                              onClick={() => setEvidenceLog(prev => [...prev, { suspect: m.role, clue: m.text }])}
+                              className="absolute -top-3 right-2 bg-black border border-purple-500 text-purple-500 text-[8px] font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-all hover:bg-purple-500 hover:text-black uppercase tracking-widest z-10"
+                            >
+                              + Extract_Data
+                            </button>
+                          )}
+
                           <span className={`font-bold uppercase ${m.role === 'Detective' ? 'text-purple-500' : m.role === 'SYSTEM' ? 'text-red-500' : 'text-white/40'}`}>{m.role}:</span>
-                          <p className="mt-1 text-white/80 leading-relaxed">{m.text}</p>
+                          {/* ADDED: onMouseUp listener to capture their selection */}
+                          <p 
+                            onMouseUp={(e) => handleTextHighlight(e, m.role)}
+                            className="mt-1 text-white/80 leading-relaxed selection:bg-purple-500/40 selection:text-white"
+                          >
+                            {m.text}
+                          </p>
                         </div>
                       ))}
-                      {loadingChat && <div className="text-purple-500/50 animate-pulse font-bold text-[9px] tracking-widest uppercase ml-8">[ Neural_Link_Processing_Response... ]</div>}
+                      {loadingChat && <div className="text-purple-500/50 animate-pulse font-bold text-[9px] tracking-widest uppercase ml-8">[ Suspect_Is_Responding... ]</div>}
                     </div>
                     <div className="flex gap-2 p-2 border border-white/10 bg-black">
                       <input
@@ -301,20 +392,60 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-in slide-in-from-right-10 px-10">
-                    <h3 className="text-xl font-black italic text-red-500 uppercase tracking-tighter">Accusation Reasoning</h3>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest text-center">The AI Judge will evaluate your logic. Why is {selectedSuspect.name} guilty?</p>
+                  <div className="flex-1 flex flex-col animate-in slide-in-from-right-10 px-6 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#a855f7 transparent' }}>
+                    <h3 className="text-xl font-black italic text-red-500 uppercase tracking-tighter mb-2 mt-4">Initiate Arrest Protocol</h3>
+                    
+                    {/* Step 1: Attach Evidence Checkboxes */}
+                    <div className="mb-6 mt-4">
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">1. Attach Required Evidence</p>
+                      {evidenceLog.length === 0 ? (
+                        <p className="text-xs text-red-500 font-mono bg-red-500/10 p-3 border border-red-500/30 animate-pulse">
+                          [WARNING]: No forensic data extracted. Arrest warrant cannot be issued without evidence.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {evidenceLog.map((ev, idx) => (
+                            <label key={idx} className={`flex items-start gap-3 p-3 border cursor-pointer transition-colors ${activeEvidenceSelections.includes(idx) ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}`}>
+                              <input 
+                                type="checkbox" 
+                                className="mt-1 accent-purple-500"
+                                checked={activeEvidenceSelections.includes(idx)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setActiveEvidenceSelections(prev => [...prev, idx]);
+                                  else setActiveEvidenceSelections(prev => prev.filter(i => i !== idx));
+                                }}
+                              />
+                              <div>
+                                <span className="text-[9px] text-purple-500 font-bold block mb-1">[{ev.suspect}]</span>
+                                <p className="text-[10px] font-mono text-white/70">{ev.clue}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 2: Detective's Logic */}
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">2. Detective's Logic</p>
                     <textarea
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className="w-full h-40 bg-white/5 border border-white/10 p-4 text-xs font-typewriter outline-none focus:border-red-500 transition-colors text-white"
-                      placeholder="Enter your forensic evidence and reasoning here..."
+                      className="w-full h-32 bg-white/5 border border-white/10 p-4 text-xs font-typewriter outline-none focus:border-red-500 transition-colors text-white mb-6"
+                      placeholder="Explain how the attached evidence proves their guilt..."
                     />
+
+                    {/* Submit Button */}
                     <button
-                      onClick={() => onAccuse(selectedSuspect.name, reason)}
-                      className="px-12 py-4 bg-red-600 text-white font-black text-xs tracking-[0.4em] uppercase hover:bg-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all"
+                      disabled={evidenceLog.length > 0 && activeEvidenceSelections.length === 0}
+                      onClick={() => {
+                        // Package the selected evidence and reasoning together for the backend!
+                        const selectedClues = activeEvidenceSelections.map(idx => evidenceLog[idx].clue).join(" | ");
+                        const finalPayload = `Attached Evidence: ${selectedClues}\n\nDetective's Logic: ${reason}`;
+                        onAccuse(selectedSuspect.name, finalPayload);
+                      }}
+                      className="w-full py-4 bg-red-600 text-white font-black text-xs tracking-[0.4em] uppercase hover:bg-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-8"
                     >
-                      Final_Decision
+                      Submit_Warrant
                     </button>
                   </div>
                 )}
@@ -375,6 +506,22 @@ export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameP
             </button>
           </div>
         </div>
+      )}
+      {/* FEATURE: Precision Extractor Floating Button */}
+      {snippetPopup && snippetPopup.show && (
+        <button
+          // onMouseDown instead of onClick so it fires BEFORE the document mousedown dismisses it
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setEvidenceLog(prev => [...prev, { suspect: snippetPopup.suspect, clue: snippetPopup.text }]);
+            setSnippetPopup(null);
+            window.getSelection()?.removeAllRanges(); // Clears the text highlight after saving
+          }}
+          style={{ top: snippetPopup.y, left: snippetPopup.x, transform: 'translateX(-50%)' }}
+          className="fixed z-[120] animate-in zoom-in-75 fade-in duration-200 bg-[#05070a] border border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)] text-purple-500 text-[9px] font-black px-4 py-2 uppercase tracking-[0.2em] hover:bg-purple-500 hover:text-black transition-colors"
+        >
+          [+ Extract_Data ]
+        </button>
       )}
     </div>
   );
