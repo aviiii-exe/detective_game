@@ -25,7 +25,11 @@ This project utilizes a modern, decoupled microservice architecture to separate 
 
 ### 2. The Backend / API Gateway (Node.js + Express)
 
-- Acts as the secure bridge and database router (`server.js`) connected to MongoDB to track game sessions and case metadata.
+- **API Gateway Layer**: The Node.js backend acts as a secure intermediary between the React frontend and the AI microservice, routing all requests and preventing direct client access to the AI system.
+
+- **Session & Evidence Management**: Game sessions, interrogation logs, and extracted evidence are stored in MongoDB, allowing the system to track player progress and verify accusations.
+
+- **Interrogation Constraint Enforcement**: The backend enforces gameplay rules such as the maximum question limit per suspect and session timers, ensuring fair gameplay and maintaining resource tension.
 
 ### 3. The AI Microservice (Python + FastAPI)
 
