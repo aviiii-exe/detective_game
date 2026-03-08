@@ -17,7 +17,7 @@ interface CaseData {
   narration: string;       // Replaced 'story'
   suspects: Suspect[];     // Array of objects instead of strings
   actual_murderer: string; // Replaced 'culprit'
-  difficulty_level: string; 
+  difficulty_level: string;
   explanation?: string;    // Kept as optional for the Result page
 }
 
@@ -40,14 +40,35 @@ export default function App() {
     }
   }, [currentPage]);
 
+  // NEW: Dynamic Browser Tab Titles
+  useEffect(() => {
+    switch (currentPage) {
+      case 'HOME':
+        document.title = "Initializing... | Forensic OS";
+        break;
+      case 'SELECTION':
+        document.title = "Database | Select Case File";
+        break;
+      case 'GAME':
+        // Bonus: If a case is active, put the case theme in the tab!
+        document.title = activeCase ? `[LIVE] ${activeCase.theme_name}` : "Active Investigation";
+        break;
+      case 'RESULT':
+        document.title = "Debrief | Post Mortem";
+        break;
+      default:
+        document.title = "Detective OS";
+    }
+  }, [currentPage, activeCase]);
+
   // UPDATED: Now takes both theme and difficulty from the Selection screen
   // Fetching the case through the Node bridge (Port 5000)
   const handleGenerateCase = async (theme: string, difficulty: string, keyword: string, desc: string) => {
     setLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/start-case', {
+      const response = await fetch('https://nonvegetative-may-untensile.ngrok-free.dev/api/start-case', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({
           difficulty: difficulty,
           case_theme: theme,
@@ -78,41 +99,56 @@ export default function App() {
 
   // 2. Updated to compare against 'actual_murderer'
   const handleAccuse = async (suspectName: string, reason: string) => {
-  if (!activeCase) return;
-  setLoading(true);
-  try {
-    // Calling teammate's new /accuse endpoint
-    const response = await fetch('http://127.0.0.1:5001/api/accuse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        gameId: activeCase.gameId, //
-        accused_suspect: suspectName,
-        user_reason: reason //
-      }),
-    });
+    if (!activeCase) return;
+    setLoading(true);
+    try {
+      // Calling teammate's new /accuse endpoint
+      const response = await fetch('https://nonvegetative-may-untensile.ngrok-free.dev/api/accuse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({
+          gameId: activeCase.gameId, //
+          accused_suspect: suspectName,
+          user_reason: reason //
+        }),
+      });
 
 
-    const data = await response.json(); // returns { success: boolean, message: string }
-    setIsCorrect(data.success);
-    setActiveCase({ ...activeCase, explanation: data.message });
-    setCurrentPage('RESULT');
-  } catch (err) {
-    alert("Connection to AI Judge failed.");
-  } finally {
-    setLoading(false);
-  }
-};
+      const data = await response.json(); // returns { success: boolean, message: string }
+      setIsCorrect(data.success);
+      setActiveCase({ ...activeCase, explanation: data.message });
+      setCurrentPage('RESULT');
+    } catch (err) {
+      alert("Connection to AI Judge failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAbort = () => {
-  setActiveCase(null);
-  setCurrentPage('SELECTION');
-};
+    setActiveCase(null);
+    setCurrentPage('SELECTION');
+  };
+
+  const handleTimeOut = () => {
+    if (!activeCase) return;
+    setIsCorrect(false); // Force a failure state
+    setActiveCase({
+      ...activeCase,
+      explanation: "NEURAL LINK TIMEOUT. You took too long to analyze the forensic data. The killer has fled the jurisdiction and the trail has gone permanently cold."
+    });
+    setCurrentPage('RESULT');
+  };
 
   return (
-    <div className="min-h-screen bg-[#05070a] text-cyan-50 font-mono flex flex-col overflow-hidden relative">
+    <div className="min-h-screen bg-[#05070a] text-purple-50 font-mono flex flex-col overflow-hidden relative">
 
-      <main className="flex-1 relative flex items-center justify-center overflow-hidden">
+      <main
+        className={`flex-1 relative flex overflow-hidden ${currentPage === 'GAME'
+            ? 'flex-col'
+            : 'items-center justify-center'
+          }`}
+      >
         {currentPage === 'HOME' && <Home />}
 
         {currentPage === 'SELECTION' && (
@@ -120,7 +156,7 @@ export default function App() {
         )}
 
         {currentPage === 'GAME' && activeCase && (
-          <Game activeCase={activeCase} onAccuse={handleAccuse} onAbort={handleAbort} />
+          <Game activeCase={activeCase} onAccuse={handleAccuse} onAbort={handleAbort} onTimeOut={handleTimeOut} />
         )}
 
         {currentPage === 'RESULT' && activeCase && (
@@ -136,8 +172,8 @@ export default function App() {
       {/* Global Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col items-center justify-center">
-          <div className="w-16 h-16 border-t-2 border-r-2 border-cyan-500 rounded-full animate-spin mb-8" />
-          <p className="text-[10px] text-cyan-500 font-bold tracking-[0.8em] animate-pulse">
+          <div className="w-16 h-16 border-t-2 border-r-2 border-purple-500 rounded-full animate-spin mb-8" />
+          <p className="text-[10px] text-purple-500 font-bold tracking-[0.8em] animate-pulse">
             INITIALIZING_INTERROGATION_ENGINE...
           </p>
         </div>

@@ -9,8 +9,9 @@
 
 
 :root {
-  --color-frost: #00f2ff;
-  --color-void: #05070a;
+  --obsidian-bg: #05070a;
+  --obsidian-purple: #a855f7;
+  --obsidian-glow: rgba(168, 85, 247, 0.4);
 }
 
 body {
@@ -81,3 +82,54 @@ body {
 body {
   background-color: #05070a;
 }
+
+/* NEW: Holographic Genie Animations */
+@keyframes modal-bg-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(4px); }
+}
+@keyframes modal-bg-out {
+  from { opacity: 1; backdrop-filter: blur(4px); }
+  to { opacity: 0; backdrop-filter: blur(0px); }
+}
+
+/* BUTTERY SMOOTH GENIE PHYSICS (GPU Accelerated) */
+@keyframes genie-pop-in {
+  0% { 
+    opacity: 0; 
+    transform: translateY(40vh) scaleX(0.05) scaleY(1.5); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0) scaleX(1) scaleY(1); 
+  }
+}
+
+@keyframes genie-pop-out {
+  0% { 
+    opacity: 1; 
+    transform: translateY(0) scaleX(1) scaleY(1); 
+  }
+  100% { 
+    opacity: 0; 
+    /* Whips down and narrows into a beam */
+    transform: translateY(50vh) scaleX(0.05) scaleY(1.5); 
+  }
+}
+
+.animate-genie-in { 
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  /* The > 1 value (1.275) creates the "overshoot" squash at the top */
+  animation: genie-pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+}
+
+.animate-genie-out { 
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  /* The < 0 value (-0.28) creates the anticipation "pull up and squash" before diving */
+  animation: genie-pop-out 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards; 
+}
+
+.animate-bg-in { animation: modal-bg-in 0.3s ease-out forwards; }
+.animate-bg-out { animation: modal-bg-out 0.3s ease-in forwards; }

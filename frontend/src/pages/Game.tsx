@@ -1,6 +1,7 @@
 // src/pages/Game.tsx
 import { useState, useEffect } from 'react';
 import { Typewriter } from '../components/Typewriter';
+import TiltedCard from '../components/TiltedCard';
 
 interface Suspect {
   name: string;
@@ -18,19 +19,21 @@ interface GameProps {
   };
   onAccuse: (suspectName: string, reason: string) => void;
   onAbort: () => void;
+  onTimeOut: () => void;
 }
 
-export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
+export default function Game({ activeCase, onAccuse, onAbort, onTimeOut }: GameProps) {
   const [phase, setPhase] = useState<'BRIEFING' | 'INVESTIGATION'>('BRIEFING');
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
+
   // Custom Modal States
   const [selectedSuspect, setSelectedSuspect] = useState<Suspect | null>(null);
-  const [showAbortConfirm, setShowAbortConfirm] = useState(false); // 🚨 FEATURE 2: Custom Abort UI
+  const [isClosingModal, setIsClosingModal] = useState(false); // State to trigger the exit animation
+  const [showAbortConfirm, setShowAbortConfirm] = useState(false); //FEATURE : Custom Abort UI
 
   // Interrogation States
   const [question, setQuestion] = useState("");
-  const [chatLog, setChatLog] = useState<{role: string, text: string}[]>([]);
+  const [chatLog, setChatLog] = useState<{ role: string, text: string }[]>([]);
   const [isAccusing, setIsAccusing] = useState(false);
   const [reason, setReason] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
@@ -70,7 +73,16 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
     }, 800);
   };
 
-  // FEATURE 1: Updated Chat Handler
+  // NEW: Smooth close handler
+  const handleCloseModal = () => {
+    setIsClosingModal(true); 
+    setTimeout(() => {
+      setSelectedSuspect(null); 
+      setIsClosingModal(false); 
+    }, 400); // synced with css duration
+  };
+
+  // FEATURE: Updated Chat Handler
   const handleChat = async () => {
     if (!question.trim() || !selectedSuspect || loadingChat) return;
 
@@ -92,9 +104,9 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
         [selectedSuspect.name]: currentCount + 1
       });
 
-      const res = await fetch('http://127.0.0.1:5001/api/chat', {
+      const res = await fetch('https://nonvegetative-may-untensile.ngrok-free.dev/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({
           gameId: activeCase.gameId,
           suspect_name: selectedSuspect.name,
@@ -103,18 +115,18 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
           difficulty: activeCase.difficulty_level
         })
       });
-      
+
       const data = await res.json();
 
       // SAFETY NET 1: Catch actual backend crashes and print them into the chat!
       if (!res.ok || data.error) {
-         setChatLog([...newLog, { role: 'SYSTEM', text: `[SYSTEM ERROR: ${data.error || 'Neural link severed.'}]` }]);
-         return;
+        setChatLog([...newLog, { role: 'SYSTEM', text: `[SYSTEM ERROR: ${data.error || 'Neural link severed.'}]` }]);
+        return;
       }
 
       // SAFETY NET 2: Grab the text no matter what key Python uses to send it
       const aiText = data.reply || data.response || data.message || (typeof data === 'string' ? data : "Subject remains silent.");
-      
+
       setChatLog([...newLog, { role: selectedSuspect.name, text: aiText }]);
 
     } catch (err) {
@@ -125,28 +137,27 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
   };
 
   return (
-    <div className="flex-1 w-full h-full p-10 flex flex-col relative overflow-hidden">
-      
+    <div className="flex-1 w-full max-w-7xl mx-auto px-10 pb-10 pt-6 flex flex-col relative">
+
       {/* PHASE 1: THE BRIEFING */}
       {phase === 'BRIEFING' && (
-        <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${
-          isTransitioning ? 'translate-y-[100vh] opacity-0' : 'animate-in fade-in zoom-in-95'
-        }`}>
+        <div className={`flex-1 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${isTransitioning ? 'translate-y-[100vh] opacity-0' : 'animate-in fade-in zoom-in-95'
+          }`}>
           <div className="w-full max-w-4xl p-12 bg-black/60 border border-white/10 backdrop-blur-xl shadow-2xl relative">
-             <div className="absolute -top-4 left-6 px-3 py-1 bg-cyan-500 text-black text-[10px] font-black uppercase tracking-widest">
-               Dossier_Open
-             </div>
-             
-             <div className="font-typewriter text-2xl leading-relaxed text-white/80 min-h-[150px]">
-               <Typewriter text={activeCase.narration} delay={30} />
-             </div>
+            <div className="absolute -top-4 left-6 px-3 py-1 bg-purple-500 text-black text-[10px] font-black uppercase tracking-widest">
+              Dossier_Open
+            </div>
+
+            <div className="font-typewriter text-2xl leading-relaxed text-white/80 min-h-[150px]">
+              <Typewriter text={activeCase.narration} delay={30} />
+            </div>
           </div>
 
-          <button 
+          <button
             onClick={handleStartGame}
             className="mt-12 px-16 py-4 border border-white/20 text-white font-bold tracking-[0.5em] uppercase hover:bg-white hover:text-black hover:scale-105 transition-all duration-300"
           >
-            START_GAME
+            BEGIN_INVESTIGATION
           </button>
         </div>
       )}
@@ -154,56 +165,61 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
       {/* PHASE 2: THE INVESTIGATION */}
       {phase === 'INVESTIGATION' && (
         <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-top-10 duration-1000">
-          
+
           {/* HEADER ROW */}
-          <div className="w-full flex justify-between items-start mb-8 relative z-20">
-            <button 
+          <div className="w-full flex justify-between items-start mb-8 relative z-20 shrink-0">
+            <button
               onClick={() => setShowAbortConfirm(true)} // 🚨 Trigger Custom Abort UI
-              className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 group transition-all"
+              className="w-12 h-12 rounded-full border border-white/50 flex items-center justify-center hover:bg-white/7 group transition-all"
             >
-              <span className="text-white/40 group-hover:text-white group-hover:-translate-x-1 transition-transform">←</span>
+              <span className="text-white/40 group-hover:text-white transition-transform">←</span>
             </button>
 
             <div className="text-right">
-              <span className="text-[8px] text-cyan-500/50 font-bold uppercase tracking-[0.3em]">Neural_Link_Time</span>
-              <div className={`mt-1 px-4 py-2 border font-mono text-2xl tracking-widest ${
-                timeLeft < 60 ? 'border-red-500 text-red-500 animate-pulse bg-red-500/10' : 'border-cyan-500/30 text-cyan-500 bg-cyan-500/5'
-              }`}>
+              <span className="text-[10px] text-purple-500/50 font-bold uppercase tracking-[0.3em]">Time_Remaining</span>
+              <div className={`mt-1 px-4 py-2 border font-mono text-2xl tracking-widest flex items-center justify-center ${timeLeft < 60 ? 'border-red-500 text-red-500 animate-pulse bg-red-500/10' : 'border-purple-500/30 text-purple-500 bg-purple-500/5'
+                }`}>
                 {formatTime(timeLeft)}
               </div>
             </div>
           </div>
 
           {/* SUSPECT GRID */}
-          <div className="flex-1 flex flex-col items-center justify-center space-y-12">
+          <div className="flex-1 flex flex-col items-center justify-center space-y-12 w-full">
             <div className="text-center space-y-2">
-              <p className="text-[10px] text-white/30 uppercase tracking-[0.5em]">Tap to know more about them</p>
+              <p className="text-[12px] text-white/70 uppercase tracking-[0.5em]">Tap to interrogate them!</p>
               <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto" />
             </div>
 
-            <div className="grid grid-cols-4 gap-8 w-full max-w-6xl">
+            <div className="w-full flex justify-center">
+              <div className="grid grid-cols-4 gap-8 gap-x-12 w-full max-w-6xl">
               {activeCase.suspects.map((suspect: any, i: number) => (
-                <button
-                  key={suspect.name}
-                  onClick={() => {
-                    setSelectedSuspect(suspect);
-                    setChatLog([]);
-                    setIsAccusing(false);
-                  }}
-                  className="group relative aspect-[3/4] bg-black/40 border border-white/5 hover:border-cyan-500/50 transition-all duration-500 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                    <span className="text-[8px] text-cyan-500/40 font-bold uppercase mb-1">Subject_0{i+1}</span>
-                    <h4 className="text-2xl font-black italic text-white/40 group-hover:text-white transition-colors uppercase leading-none">
-                      {suspect.name}
-                    </h4>
-                  </div>
-                  
-                  <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/10 group-hover:border-cyan-500 transition-colors" />
-                </button>
+                // NEW: Wrapped the entire button in our 3D physics engine
+                <TiltedCard key={suspect.name} rotateAmplitude={14} scaleOnHover={1.05}>
+                  <button
+                    onClick={() => {
+                      setSelectedSuspect(suspect);
+                      setChatLog([]);
+                      setIsAccusing(false);
+                    }}
+                    className="w-full h-full group relative aspect-[3/4] bg-black/40 border border-white/15 hover:border-purple-500/50 transition-colors duration-500 overflow-hidden shadow-2xl"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    <div className="absolute inset-0 p-6 flex flex-col justify-center items-center text-center pointer-events-none">
+                      <span className="text-[14px] text-purple-500/60 group-hover:text-purple-400 transition-colors duration-300 font-bold uppercase tracking-widest mb-1">
+                        Subject_0{i+1}
+                      </span>
+                      <h4 className="text-2xl font-black italic text-white/40 group-hover:text-white transition-colors uppercase leading-none">
+                        {suspect.name}
+                      </h4>
+                    </div>
+                    
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/10 group-hover:border-purple-500 transition-colors" />
+                  </button>
+                </TiltedCard>
               ))}
+            </div>
             </div>
           </div>
         </div>
@@ -215,31 +231,43 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
 
       {/* 1. INTERROGATION MODAL */}
       {selectedSuspect && (
-        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-20 animate-in fade-in zoom-in-95 duration-300">
-          <div className="w-full max-w-5xl h-full bg-black border border-white/10 flex flex-col overflow-hidden relative shadow-2xl">
+        <div className={`fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-20 ${
+          isClosingModal ? 'animate-bg-out' : 'animate-bg-in'
+        }`}>
+          
+          {/* Gets the separate Genie animation! */}
+          <div className={`w-full max-w-5xl h-full bg-[#05070a] border border-purple-500/20 flex flex-col overflow-hidden relative shadow-[0_0_50px_rgba(168,85,247,0.15)] ${
+            isClosingModal ? 'animate-genie-out' : 'animate-genie-in'
+          }`}>
             
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
               <h2 className="text-2xl font-black italic uppercase tracking-tighter">
-                Interrogating: <span className="text-cyan-500">{selectedSuspect.name}</span>
+                Interrogating: <span className="text-purple-500">{selectedSuspect.name}</span>
               </h2>
-              <button onClick={() => setSelectedSuspect(null)} className="text-white/20 hover:text-white uppercase text-[10px] tracking-widest">[ CLOSE_FILE ]</button>
+              {/*REFACTORED: Now uses our smooth close handler */}
+              <button 
+                onClick={handleCloseModal} 
+                className="text-white/20 hover:text-purple-400 transition-colors uppercase text-[10px] font-bold tracking-widest"
+              >
+                [ CLOSE_FILE ]
+              </button>
             </div>
 
             <div className="flex-1 flex overflow-hidden">
               {/* Left: Suspect Dossier */}
               <div className="w-1/3 p-8 border-r border-white/10 bg-white/5 overflow-y-auto">
-                <span className="text-[8px] text-cyan-500 font-bold uppercase tracking-widest block mb-4">Forensic_Bio</span>
+                <span className="text-[8px] text-purple-500 font-bold uppercase tracking-widest block mb-4">Forensic_Bio</span>
                 <p className="text-xs text-white/60 leading-relaxed italic font-typewriter">{selectedSuspect.hover_bio}</p>
-                
+
                 {/* FEATURE 1: Questions remaining tracker */}
                 <div className="mt-8 pt-6 border-t border-white/10 text-center">
                   <span className="text-[9px] text-white/30 uppercase tracking-widest block mb-1">Link_Questions_Used</span>
-                  <p className={`text-4xl font-mono ${ (questionsAsked[selectedSuspect.name] || 0) >= 3 ? 'text-red-500 animate-pulse' : 'text-cyan-500'}`}>
+                  <p className={`text-4xl font-mono ${(questionsAsked[selectedSuspect.name] || 0) >= 3 ? 'text-red-500 animate-pulse' : 'text-purple-500'}`}>
                     {(questionsAsked[selectedSuspect.name] || 0)} <span className="text-sm text-white/40">/ 3</span>
                   </p>
                 </div>
 
-                <button 
+                <button
                   onClick={() => setIsAccusing(true)}
                   className="mt-12 w-full py-4 border border-red-500/50 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                 >
@@ -253,36 +281,36 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
                   <>
                     <div className="flex-1 overflow-y-auto space-y-4 font-mono text-[11px] mb-6 pr-4">
                       {chatLog.map((m, i) => (
-                        <div key={i} className={`p-3 border ${m.role === 'Detective' ? 'border-cyan-500/30 bg-cyan-500/5 ml-8' : m.role === 'SYSTEM' ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/5 mr-8'}`}>
-                          <span className={`font-bold uppercase ${m.role === 'Detective' ? 'text-cyan-500' : m.role === 'SYSTEM' ? 'text-red-500' : 'text-white/40'}`}>{m.role}:</span>
+                        <div key={i} className={`p-3 border ${m.role === 'Detective' ? 'border-purple-500/30 bg-purple-500/5 ml-8' : m.role === 'SYSTEM' ? 'border-red-500/30 bg-red-500/5' : 'border-white/10 bg-white/5 mr-8'}`}>
+                          <span className={`font-bold uppercase ${m.role === 'Detective' ? 'text-purple-500' : m.role === 'SYSTEM' ? 'text-red-500' : 'text-white/40'}`}>{m.role}:</span>
                           <p className="mt-1 text-white/80 leading-relaxed">{m.text}</p>
                         </div>
                       ))}
-                      {loadingChat && <div className="text-cyan-500/50 animate-pulse font-bold text-[9px] tracking-widest uppercase ml-8">[ Neural_Link_Processing_Response... ]</div>}
+                      {loadingChat && <div className="text-purple-500/50 animate-pulse font-bold text-[9px] tracking-widest uppercase ml-8">[ Neural_Link_Processing_Response... ]</div>}
                     </div>
                     <div className="flex gap-2 p-2 border border-white/10 bg-black">
-                      <input 
+                      <input
                         value={question}
                         disabled={(questionsAsked[selectedSuspect.name] || 0) >= 3}
                         onChange={(e) => setQuestion(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleChat()}
-                        placeholder={(questionsAsked[selectedSuspect.name] || 0) >= 3 ? "Subject refuses to speak further." : "Type your question..."} 
-                        className="flex-1 bg-transparent p-2 outline-none text-xs uppercase tracking-widest text-cyan-50 disabled:text-white/20" 
+                        placeholder={(questionsAsked[selectedSuspect.name] || 0) >= 3 ? "Subject refuses to speak further." : "Type your question..."}
+                        className="flex-1 bg-transparent p-2 outline-none text-xs uppercase tracking-widest text-purple-50 disabled:text-white/20"
                       />
-                      <button onClick={handleChat} disabled={(questionsAsked[selectedSuspect.name] || 0) >= 3} className="bg-cyan-500 text-black px-6 font-bold text-[10px] uppercase tracking-widest hover:bg-cyan-400 disabled:bg-white/10 disabled:text-white/30">Send</button>
+                      <button onClick={handleChat} disabled={(questionsAsked[selectedSuspect.name] || 0) >= 3} className="bg-purple-500 text-black px-6 font-bold text-[10px] uppercase tracking-widest hover:bg-purple-400 disabled:bg-white/10 disabled:text-white/30">Send</button>
                     </div>
                   </>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-in slide-in-from-right-10 px-10">
                     <h3 className="text-xl font-black italic text-red-500 uppercase tracking-tighter">Accusation Reasoning</h3>
                     <p className="text-[10px] text-white/40 uppercase tracking-widest text-center">The AI Judge will evaluate your logic. Why is {selectedSuspect.name} guilty?</p>
-                    <textarea 
+                    <textarea
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       className="w-full h-40 bg-white/5 border border-white/10 p-4 text-xs font-typewriter outline-none focus:border-red-500 transition-colors text-white"
                       placeholder="Enter your forensic evidence and reasoning here..."
                     />
-                    <button 
+                    <button
                       onClick={() => onAccuse(selectedSuspect.name, reason)}
                       className="px-12 py-4 bg-red-600 text-white font-black text-xs tracking-[0.4em] uppercase hover:bg-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all"
                     >
@@ -299,31 +327,52 @@ export default function Game({ activeCase, onAccuse, onAbort }: GameProps) {
       {/* FEATURE 2: CUSTOM ABORT CONFIRMATION MODAL */}
       {showAbortConfirm && (
         <div className="fixed inset-0 z-[70] bg-black/95 backdrop-blur-lg flex items-center justify-center animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-black border border-red-500/30 p-10 text-center shadow-[0_0_60px_rgba(239,68,68,0.2)]">
-            <div className="absolute top-4 left-6 px-3 py-1 bg-red-600 text-white text-[9px] font-black uppercase tracking-[0.4em]">
-              WARNING_ALERT
-            </div>
+          <div className="w-full max-w-lg bg-black border border-red-500/30 p-10 text-center shadow-[0_0_60px_rgba(239,68,68,0.2)]">
+
 
             <div className="mb-8 mt-4">
               <span className="text-red-500 text-xs font-mono tracking-wider animate-pulse">[ Neural Link Stable ]</span>
-              <h3 className="text-3xl font-black italic uppercase text-white tracking-tighter mt-2">Abort Mission?</h3>
-              <p className="mt-4 text-[10px] text-white/60 font-typewriter uppercase tracking-widest leading-relaxed">Closing this dossier now will result in the <strong className="text-red-500">suspect escaping justice</strong>. The case remains unsolved.</p>
+              <h3 className="text-4xl font-black italic uppercase text-white tracking-tighter mt-2">Abort Mission?</h3>
+              <p className="mt-6 text-[12px] text-white/70 font-typewriter uppercase tracking-widest leading-relaxed">Closing this dossier now will result in the <strong className="text-red-500">suspect escaping justice</strong>. The case remains unsolved.</p>
             </div>
 
-            <div className="flex gap-4">
-              <button 
+            <div className="flex gap-4 px-2 mt-4">
+              <button
                 onClick={() => setShowAbortConfirm(false)}
-                className="flex-1 py-4 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/5"
+                className="flex-1 py-4 px-2 border border-white/10 text-white text-[12px] font-bold uppercase tracking-widest hover:bg-white/10"
               >
                 Continue_Investigation
               </button>
-              <button 
-                onClick={onAbort} // This connects back to App.tsx
-                className="flex-1 py-4 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:scale-105 transition-all"
+              <button
+                onClick={onAbort}
+                className="flex-1 py-4 px-2 bg-red-600 text-white text-[12px] font-black uppercase tracking-[0.15em] hover:bg-red-500 hover:scale-105 transition-all"
               >
                 Abort_Case_Unsolved
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEATURE 3: CRITICAL TIMEOUT MODAL */}
+      {timeLeft === 0 && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-500">
+          <div className="max-w-xl p-12 border border-red-500/50 text-center bg-red-950/20 shadow-[0_0_100px_rgba(239,68,68,0.2)]">
+
+            <h2 className="text-5xl font-black italic text-red-500 tracking-tighter mb-4 mt-6 animate-pulse">
+              LINK_SEVERED
+            </h2>
+
+            <p className="text-white/60 font-mono text-xs uppercase tracking-widest leading-relaxed mb-10">
+              Investigation time expired. Local authorities have taken over the crime scene. The primary suspect has fled the jurisdiction.
+            </p>
+
+            <button
+              onClick={onTimeOut}
+              className="w-full py-4 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.5em] hover:bg-red-500 hover:shadow-[0_0_30px_rgba(239,68,68,0.6)] transition-all"
+            >
+              [ VIEW_POST_MORTEM ]
+            </button>
           </div>
         </div>
       )}
