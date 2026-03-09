@@ -27,13 +27,15 @@ This project utilizes a modern, decoupled microservice architecture to separate 
 
 - **API Gateway Layer**: The Node.js backend acts as a secure intermediary between the React frontend and the AI microservice, routing all requests and preventing direct client access to the AI system.
 
-- **Session & Evidence Management**: Game sessions, interrogation logs, and extracted evidence are stored in MongoDB, allowing the system to track player progress and verify accusations.
+- **Scalability Architecture (Upcoming)**: The system is pre-configured for MongoDB integration. The architecture is designed to support persistent game sessions, interrogation logs, and global leaderboards in future releases.
 
 - **Interrogation Constraint Enforcement**: The backend enforces gameplay rules such as the maximum question limit per suspect and session timers, ensuring fair gameplay and maintaining resource tension.
 
 ### 3. The AI Microservice (Python + FastAPI)
 
 - **Local Inference**: Uses the `requests` library to communicate with a local Ollama instance running the `llama3.2` model, ensuring completely free, private, and high-speed AI generation.
+
+- **Context-Aware Prompting**: Utilizes engineered prompts to enforce specific cultural themes (Modern India) and prevent common LLM tropes, ensuring authentic and logical mystery narratives.
 
 - **Strict JSON Formatting**: The FastAPI endpoints utilize highly engineered prompt constraints to force the LLM to return strictly formatted JSON objects for case generation, character bios, and verdict logic.
 
