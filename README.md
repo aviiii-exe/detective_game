@@ -70,4 +70,4 @@ npm run dev #runs on port 5001
 (Note: Ensure your local ngrok tunnels or localhost URLs in App.tsx and Game.tsx are pointed to your active backend ports!)
 
 ---
-*Made with ❤️ by Avinav Kaushal, Aayush kumar and Shreyas Naik.*
+*Made with ❤️ by Avinav Kaushal, Aayush Biswas and Shreyas Naik.*
